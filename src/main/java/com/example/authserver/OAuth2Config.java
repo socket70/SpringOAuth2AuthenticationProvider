@@ -13,7 +13,6 @@ import org.springframework.security.oauth2.config.annotation.web.configuration.A
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableAuthorizationServer;
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerEndpointsConfigurer;
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerSecurityConfigurer;
-import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.token.TokenEnhancer;
 import org.springframework.security.oauth2.provider.token.TokenEnhancerChain;
@@ -34,6 +33,12 @@ public class OAuth2Config extends AuthorizationServerConfigurerAdapter {
     @Qualifier("authenticationManagerBean")
     private AuthenticationManager authenticationManager;
 
+    @Autowired
+    private FakeClientDetailsService clientDetailsService;
+
+    @Autowired
+    private FakeUserDetailsService userDetailsService;
+
     @Bean
     public JwtAccessTokenConverter jwtAccessTokenConverter() {
         JwtAccessTokenConverter converter = new JwtAccessTokenConverter();
@@ -52,14 +57,9 @@ public class OAuth2Config extends AuthorizationServerConfigurerAdapter {
         return new CustomTokenEnhancer();
     }
 
-    @Bean
-    public ClientDetailsService clientDetailsService() {
-        return new FakeClientDetailsService();
-    }
-
     @Override
     public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
-        clients.withClientDetails(clientDetailsService());
+        clients.withClientDetails(this.clientDetailsService);
     }
 
     @Override
@@ -69,7 +69,12 @@ public class OAuth2Config extends AuthorizationServerConfigurerAdapter {
                 Arrays.asList(tokenEnhancer(), jwtAccessTokenConverter())
         );
 
-        endpoints.tokenStore(tokenStore()).tokenEnhancer(chain).authenticationManager(authenticationManager);
+        endpoints
+                .tokenStore(tokenStore())
+                .tokenEnhancer(chain)
+                // We must inject an authentication manager to activate the password grant flow
+                .authenticationManager(this.authenticationManager)
+                .userDetailsService(this.userDetailsService);
     }
 
     @Override
@@ -88,9 +93,9 @@ public class OAuth2Config extends AuthorizationServerConfigurerAdapter {
         public OAuth2AccessToken enhance(OAuth2AccessToken accessToken, OAuth2Authentication authentication) {
             Map<String,Object> info = new HashMap<>();
             if (authentication.isClientOnly()) {
-                info.put("foo", "a client");
+                info.put("foo", "I am a client");
             } else {
-                info.put("foo", "a user");
+                info.put("foo", "I am a user");
             }
             ((DefaultOAuth2AccessToken)accessToken).setAdditionalInformation(info);
             return accessToken;
