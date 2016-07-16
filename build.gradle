@@ -1,0 +1,42 @@
+buildscript {
+  ext {
+    springBootVersion = '1.3.6.RELEASE'
+  }
+  dependencies {
+    classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+  }
+}
+
+group = 'com.example.authserver'
+
+apply plugin: 'java'
+apply plugin: 'spring-boot'
+
+dependencies {
+    compile('org.springframework.boot:spring-boot-starter-actuator')
+    compile('org.springframework.boot:spring-boot-starter-thymeleaf')
+    compile('org.springframework.boot:spring-boot-starter-security')
+    compile('org.springframework.boot:spring-boot-starter-web')
+    compile('org.springframework.boot:spring-boot-devtools')
+    compile('org.springframework.security.oauth:spring-security-oauth2')
+    compile('org.springframework.security:spring-security-jwt')
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+dependencyManagement {
+  imports {
+    mavenBom("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
+  }
+}
+
+bootRun {
+    addResources = true
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.13'
+}
+
